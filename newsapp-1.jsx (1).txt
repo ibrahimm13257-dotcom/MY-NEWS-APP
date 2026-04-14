@@ -1,0 +1,579 @@
+import { useState, useRef } from "react";
+
+const initialNews = [
+  {
+    id: 1,
+    category: "NATIONAL",
+    title: "India's GDP Growth Hits 7.2% in Q1 FY26",
+    summary:
+      "India's economy grew at 7.2% in the first quarter of FY26, driven by strong manufacturing output and service sector expansion. The Finance Ministry credits infrastructure investment and digital adoption for the surge, making India the fastest-growing major economy globally for the fourth consecutive quarter.",
+    source: "Economic Times",
+    time: "2 hrs ago",
+    image: "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=600&q=80",
+  },
+  {
+    id: 2,
+    category: "INTERNATIONAL",
+    title: "UN Climate Summit Sets New Carbon Targets for 2030",
+    summary:
+      "The United Nations Climate Summit concluded with 140 nations agreeing to cut carbon emissions by 45% by 2030. The landmark deal includes $200 billion in green energy funding for developing countries. Critics say the commitments still fall short of what scientists say is needed to limit warming to 1.5°C.",
+    source: "Reuters",
+    time: "4 hrs ago",
+    image: "https://images.unsplash.com/photo-1569163139599-0f4517e36f51?w=600&q=80",
+  },
+  {
+    id: 3,
+    category: "NATIONAL",
+    title: "Supreme Court Rules on Electoral Bond Transparency",
+    summary:
+      "The Supreme Court of India issued a landmark ruling mandating full public disclosure of electoral bond donors above ₹10 lakh. The 5-judge bench unanimously held that voters have the right to know funding sources of political parties. The Election Commission must publish all records within 30 days.",
+    source: "The Hindu",
+    time: "6 hrs ago",
+    image: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&q=80",
+  },
+  {
+    id: 4,
+    category: "INTERNATIONAL",
+    title: "OpenAI Launches GPT-5 with Real-Time Vision Capabilities",
+    summary:
+      "OpenAI unveiled GPT-5, its most advanced AI model featuring real-time video understanding and extended reasoning. The model outperforms humans on 87% of professional benchmarks. Available via API from today, GPT-5 is priced at $0.03 per 1K tokens. Competitors Google and Anthropic are expected to respond with rival launches soon.",
+    source: "TechCrunch",
+    time: "8 hrs ago",
+    image: "https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=600&q=80",
+  },
+  {
+    id: 5,
+    category: "NATIONAL",
+    title: "Mumbai-Pune Hyperloop Gets Final Government Approval",
+    summary:
+      "The Union Cabinet approved the Mumbai-Pune Hyperloop project worth ₹1.2 lakh crore, cutting travel time to just 23 minutes. Construction begins in December with completion targeted by 2031. The project will create over 80,000 jobs and is being developed in partnership with Virgin Hyperloop and L&T Infrastructure.",
+    source: "NDTV",
+    time: "10 hrs ago",
+    image: "https://images.unsplash.com/photo-1474487548417-781cb71495f3?w=600&q=80",
+  },
+  {
+    id: 6,
+    category: "INTERNATIONAL",
+    title: "Israel-Hamas Ceasefire Extended for 30 More Days",
+    summary:
+      "Qatar-mediated talks resulted in a 30-day extension of the Israel-Hamas ceasefire, with both sides agreeing to additional hostage-prisoner exchanges. The deal includes increased humanitarian aid to Gaza. US Secretary of State hailed the agreement as a critical step toward a lasting peace, while calling for immediate rebuilding efforts.",
+    source: "BBC News",
+    time: "12 hrs ago",
+    image: "https://images.unsplash.com/photo-1600347952280-f7cd8e5a5c4f?w=600&q=80",
+  },
+];
+
+const categoryColors = {
+  NATIONAL: { bg: "#FF6B35", text: "#fff" },
+  INTERNATIONAL: { bg: "#1A73E8", text: "#fff" },
+};
+
+export default function NewsApp() {
+  const [news] = useState(initialNews);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [showForm, setShowForm] = useState(false);
+  const [filter, setFilter] = useState("ALL");
+  const [newArticle, setNewArticle] = useState({
+    category: "NATIONAL",
+    title: "",
+    summary: "",
+    source: "",
+  });
+  const [articles, setArticles] = useState(initialNews);
+  const touchStartY = useRef(null);
+  const containerRef = useRef(null);
+
+  const filtered = filter === "ALL" ? articles : articles.filter((a) => a.category === filter);
+
+  const handleTouchStart = (e) => {
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e) => {
+    if (touchStartY.current === null) return;
+    const delta = touchStartY.current - e.changedTouches[0].clientY;
+    if (delta > 50 && activeIndex < filtered.length - 1) setActiveIndex((i) => i + 1);
+    if (delta < -50 && activeIndex > 0) setActiveIndex((i) => i - 1);
+    touchStartY.current = null;
+  };
+
+  const handleWheel = (e) => {
+    if (e.deltaY > 30 && activeIndex < filtered.length - 1) setActiveIndex((i) => i + 1);
+    if (e.deltaY < -30 && activeIndex > 0) setActiveIndex((i) => i - 1);
+  };
+
+  const handleAdd = () => {
+    if (!newArticle.title || !newArticle.summary || !newArticle.source) return;
+    const added = {
+      ...newArticle,
+      id: Date.now(),
+      time: "Just now",
+      image: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=600&q=80",
+    };
+    setArticles((prev) => [added, ...prev]);
+    setActiveIndex(0);
+    setShowForm(false);
+    setNewArticle({ category: "NATIONAL", title: "", summary: "", source: "" });
+  };
+
+  const wordCount = (text) => text.trim().split(/\s+/).filter(Boolean).length;
+  const wc = wordCount(newArticle.summary);
+  const wcColor = wc >= 50 && wc <= 70 ? "#22c55e" : wc > 70 ? "#ef4444" : "#f59e0b";
+
+  const current = filtered[activeIndex];
+
+  return (
+    <div
+      style={{
+        fontFamily: "'Playfair Display', 'Georgia', serif",
+        background: "#0a0a0a",
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        overflow: "hidden",
+        position: "relative",
+      }}
+    >
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        ::-webkit-scrollbar { display: none; }
+        .card-enter { animation: slideUp 0.45s cubic-bezier(0.22,1,0.36,1) forwards; }
+        @keyframes slideUp { from { opacity:0; transform:translateY(40px) scale(0.97); } to { opacity:1; transform:translateY(0) scale(1); } }
+        .pill-btn { transition: all 0.2s; cursor: pointer; border: none; font-family: 'DM Sans', sans-serif; }
+        .pill-btn:hover { opacity: 0.85; transform: scale(1.03); }
+        .nav-dot { transition: all 0.3s; cursor: pointer; border: none; background: none; }
+        .read-more:hover { text-decoration: underline; opacity: 0.8; }
+        textarea, input, select { font-family: 'DM Sans', sans-serif; }
+        .form-input:focus { outline: none; border-color: #FF6B35 !important; }
+      `}</style>
+
+      {/* Header */}
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 480,
+          padding: "16px 20px 12px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          zIndex: 10,
+        }}
+      >
+        <div>
+          <div style={{ color: "#FF6B35", fontSize: 11, fontFamily: "'DM Sans'", letterSpacing: 4, fontWeight: 500 }}>
+            TODAY'S EDITION
+          </div>
+          <div style={{ color: "#fff", fontSize: 24, fontWeight: 900, lineHeight: 1.1, fontStyle: "italic" }}>
+            60 Words
+          </div>
+        </div>
+        <button
+          className="pill-btn"
+          onClick={() => setShowForm(true)}
+          style={{
+            background: "#FF6B35",
+            color: "#fff",
+            borderRadius: 40,
+            padding: "8px 18px",
+            fontSize: 13,
+            fontWeight: 500,
+          }}
+        >
+          + Add News
+        </button>
+      </div>
+
+      {/* Filter Tabs */}
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          padding: "0 20px 12px",
+          width: "100%",
+          maxWidth: 480,
+        }}
+      >
+        {["ALL", "NATIONAL", "INTERNATIONAL"].map((f) => (
+          <button
+            key={f}
+            className="pill-btn"
+            onClick={() => { setFilter(f); setActiveIndex(0); }}
+            style={{
+              background: filter === f ? "#fff" : "rgba(255,255,255,0.07)",
+              color: filter === f ? "#0a0a0a" : "#999",
+              borderRadius: 40,
+              padding: "6px 14px",
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: 1.2,
+            }}
+          >
+            {f}
+          </button>
+        ))}
+      </div>
+
+      {/* News Card */}
+      {current ? (
+        <div
+          key={current.id}
+          ref={containerRef}
+          className="card-enter"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onWheel={handleWheel}
+          style={{
+            width: "100%",
+            maxWidth: 480,
+            flex: 1,
+            padding: "0 16px 16px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 0,
+          }}
+        >
+          {/* Image */}
+          <div
+            style={{
+              borderRadius: "16px 16px 0 0",
+              overflow: "hidden",
+              height: 220,
+              position: "relative",
+              flexShrink: 0,
+            }}
+          >
+            <img
+              src={current.image}
+              alt={current.title}
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                background: "linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.7))",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                top: 12,
+                left: 12,
+                background: categoryColors[current.category]?.bg || "#333",
+                color: "#fff",
+                fontSize: 10,
+                fontFamily: "'DM Sans'",
+                fontWeight: 700,
+                letterSpacing: 2,
+                padding: "4px 10px",
+                borderRadius: 40,
+              }}
+            >
+              {current.category}
+            </div>
+            <div
+              style={{
+                position: "absolute",
+                bottom: 12,
+                right: 12,
+                color: "rgba(255,255,255,0.7)",
+                fontSize: 11,
+                fontFamily: "'DM Sans'",
+              }}
+            >
+              {current.time}
+            </div>
+          </div>
+
+          {/* Content */}
+          <div
+            style={{
+              background: "#161616",
+              borderRadius: "0 0 16px 16px",
+              padding: "20px 20px 24px",
+              flex: 1,
+            }}
+          >
+            <h2
+              style={{
+                color: "#fff",
+                fontSize: 20,
+                fontWeight: 700,
+                lineHeight: 1.3,
+                marginBottom: 14,
+                fontStyle: "italic",
+              }}
+            >
+              {current.title}
+            </h2>
+            <p
+              style={{
+                color: "#c8c8c8",
+                fontSize: 14.5,
+                fontFamily: "'DM Sans'",
+                lineHeight: 1.75,
+                fontWeight: 300,
+                marginBottom: 16,
+              }}
+            >
+              {current.summary}
+            </p>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                <div
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: "#FF6B35",
+                  }}
+                />
+                <span
+                  style={{
+                    color: "#666",
+                    fontSize: 12,
+                    fontFamily: "'DM Sans'",
+                    fontWeight: 500,
+                  }}
+                >
+                  {current.source}
+                </span>
+              </div>
+              <span
+                className="read-more"
+                style={{
+                  color: "#FF6B35",
+                  fontSize: 12,
+                  fontFamily: "'DM Sans'",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  letterSpacing: 0.5,
+                }}
+              >
+                READ MORE →
+              </span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div style={{ color: "#555", fontFamily: "'DM Sans'", marginTop: 80, fontSize: 15 }}>
+          No news in this category yet.
+        </div>
+      )}
+
+      {/* Pagination Dots + Navigation */}
+      <div
+        style={{
+          display: "flex",
+          gap: 6,
+          padding: "12px 0 20px",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <button
+          className="nav-dot"
+          onClick={() => setActiveIndex((i) => Math.max(0, i - 1))}
+          style={{ color: activeIndex === 0 ? "#333" : "#FF6B35", fontSize: 18, padding: "0 6px" }}
+        >
+          ↑
+        </button>
+        {filtered.map((_, i) => (
+          <button
+            key={i}
+            className="nav-dot"
+            onClick={() => setActiveIndex(i)}
+            style={{
+              width: i === activeIndex ? 22 : 7,
+              height: 7,
+              borderRadius: 10,
+              background: i === activeIndex ? "#FF6B35" : "#333",
+              transition: "all 0.3s",
+            }}
+          />
+        ))}
+        <button
+          className="nav-dot"
+          onClick={() => setActiveIndex((i) => Math.min(filtered.length - 1, i + 1))}
+          style={{ color: activeIndex === filtered.length - 1 ? "#333" : "#FF6B35", fontSize: 18, padding: "0 6px" }}
+        >
+          ↓
+        </button>
+      </div>
+
+      {/* Add News Form Modal */}
+      {showForm && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.85)",
+            zIndex: 100,
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "center",
+          }}
+          onClick={(e) => e.target === e.currentTarget && setShowForm(false)}
+        >
+          <div
+            style={{
+              background: "#161616",
+              width: "100%",
+              maxWidth: 480,
+              borderRadius: "20px 20px 0 0",
+              padding: "28px 24px 36px",
+              animation: "slideUp 0.35s ease",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 22,
+              }}
+            >
+              <div
+                style={{
+                  color: "#fff",
+                  fontSize: 20,
+                  fontWeight: 700,
+                  fontStyle: "italic",
+                }}
+              >
+                Add News Article
+              </div>
+              <button
+                className="pill-btn"
+                onClick={() => setShowForm(false)}
+                style={{
+                  background: "#2a2a2a",
+                  color: "#aaa",
+                  borderRadius: "50%",
+                  width: 32,
+                  height: 32,
+                  fontSize: 16,
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <select
+                value={newArticle.category}
+                onChange={(e) => setNewArticle((p) => ({ ...p, category: e.target.value }))}
+                className="form-input"
+                style={{
+                  background: "#222",
+                  border: "1px solid #333",
+                  color: "#fff",
+                  borderRadius: 10,
+                  padding: "10px 14px",
+                  fontSize: 13,
+                }}
+              >
+                <option value="NATIONAL">🇮🇳 National</option>
+                <option value="INTERNATIONAL">🌍 International</option>
+              </select>
+
+              <input
+                placeholder="Headline (5–12 words)"
+                value={newArticle.title}
+                onChange={(e) => setNewArticle((p) => ({ ...p, title: e.target.value }))}
+                className="form-input"
+                style={{
+                  background: "#222",
+                  border: "1px solid #333",
+                  color: "#fff",
+                  borderRadius: 10,
+                  padding: "10px 14px",
+                  fontSize: 13,
+                }}
+              />
+
+              <div style={{ position: "relative" }}>
+                <textarea
+                  placeholder="News summary (50–70 words)..."
+                  value={newArticle.summary}
+                  onChange={(e) => setNewArticle((p) => ({ ...p, summary: e.target.value }))}
+                  rows={5}
+                  className="form-input"
+                  style={{
+                    background: "#222",
+                    border: "1px solid #333",
+                    color: "#fff",
+                    borderRadius: 10,
+                    padding: "10px 14px",
+                    fontSize: 13,
+                    width: "100%",
+                    resize: "none",
+                  }}
+                />
+                <div
+                  style={{
+                    position: "absolute",
+                    bottom: 10,
+                    right: 12,
+                    fontSize: 11,
+                    fontFamily: "'DM Sans'",
+                    color: wcColor,
+                    fontWeight: 600,
+                  }}
+                >
+                  {wc} / 50–70 words
+                </div>
+              </div>
+
+              <input
+                placeholder="Source (e.g. The Hindu, BBC)"
+                value={newArticle.source}
+                onChange={(e) => setNewArticle((p) => ({ ...p, source: e.target.value }))}
+                className="form-input"
+                style={{
+                  background: "#222",
+                  border: "1px solid #333",
+                  color: "#fff",
+                  borderRadius: 10,
+                  padding: "10px 14px",
+                  fontSize: 13,
+                }}
+              />
+
+              <button
+                className="pill-btn"
+                onClick={handleAdd}
+                style={{
+                  background: wc >= 50 && wc <= 70 ? "#FF6B35" : "#333",
+                  color: wc >= 50 && wc <= 70 ? "#fff" : "#666",
+                  borderRadius: 40,
+                  padding: "13px",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  letterSpacing: 1,
+                  cursor: wc >= 50 && wc <= 70 ? "pointer" : "not-allowed",
+                }}
+              >
+                PUBLISH ARTICLE
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
